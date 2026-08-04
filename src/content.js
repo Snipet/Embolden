@@ -2,6 +2,10 @@
 
 // Embolden content script — DOM pipeline. Pure logic lives in core.js
 // (loaded before this file, exposed as globalThis.EmboldenCore).
+//
+// State is storage-driven: this script reads chrome.storage.sync once on
+// injection and reacts to chrome.storage.onChanged afterwards. Nothing
+// messages it directly, so tabs opened before the popup stay in sync.
 (() => {
   if (window.__emboldenLoaded) return;
   window.__emboldenLoaded = true;
@@ -10,9 +14,11 @@
   if (!core || typeof Intl === "undefined" || typeof Intl.Segmenter !== "function") {
     return;
   }
-
-  // Phase 1: hardcoded state. Phase 2 replaces this with chrome.storage.
-  const ratio = core.ratioForStrength("medium");
+  const storage =
+    typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync
+      ? chrome.storage
+      : null;
+  if (!storage) return;
 
   const WRAPPER_TAG = "EMB-B";
   const SKIP_TAGS = new Set([
@@ -28,6 +34,11 @@
 
   const SLICE_BUDGET_MS = 8;
   const FALLBACK_CHUNK = 200;
+
+  let settings = core.normalizeSettings(null);
+  let ratio = core.ratioForStrength(settings.strength);
+  // True while wrappers are applied (or an apply pass is in flight).
+  let active = false;
 
   // Generation counter: bumped whenever a new apply/revert supersedes
   // in-flight chunked work, so stale idle callbacks abort instead of
@@ -139,11 +150,6 @@
     else resetQueue();
   }
 
-  function applyUnder(root) {
-    collectTextNodes(root, queue);
-    scheduleQueue();
-  }
-
   function revertUnder(root) {
     const wrappers = root.querySelectorAll("emb-b");
     if (wrappers.length === 0) return;
@@ -161,19 +167,47 @@
   function applyAll() {
     generation++;
     resetQueue();
+    active = true;
     if (!document.body) return;
-    applyUnder(document.body);
+    collectTextNodes(document.body, queue);
+    scheduleQueue();
   }
 
   function revertAll() {
     generation++;
     resetQueue();
+    active = false;
     if (!document.body) return;
     revertUnder(document.body);
   }
 
-  // Exposed for debugging from the console in unpacked builds.
-  window.__embolden = { applyAll, revertAll };
+  function effectiveEnabled(s) {
+    return s.enabled && !s.disabledSites.includes(location.hostname);
+  }
 
-  applyAll();
+  function applySettings(next) {
+    const prev = settings;
+    settings = next;
+    ratio = core.ratioForStrength(next.strength);
+    const shouldBeOn = effectiveEnabled(next);
+    if (shouldBeOn && !active) {
+      applyAll();
+    } else if (!shouldBeOn && active) {
+      revertAll();
+    } else if (shouldBeOn && active && prev.strength !== next.strength) {
+      // Strength change: revert + reapply (simple and correct).
+      revertAll();
+      applyAll();
+    }
+  }
+
+  storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync" || !changes.settings) return;
+    applySettings(core.normalizeSettings(changes.settings.newValue));
+  });
+
+  storage.sync.get("settings", (result) => {
+    if (chrome.runtime.lastError) return;
+    applySettings(core.normalizeSettings(result.settings));
+  });
 })();

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Embolden</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="row">
+    <h1 class="wordmark"><span class="wordmark-bold">Emb</span>olden</h1>
+    <label class="switch" title="Turn Embolden on or off everywhere">
+      <input type="checkbox" id="master-toggle" aria-label="Enable Embolden everywhere">
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <section class="row" id="site-row">
+    <div class="row-text">
+      <span class="row-label">On this site</span>
+      <span class="row-detail" id="site-host"></span>
+    </div>
+    <label class="switch" id="site-switch">
+      <input type="checkbox" id="site-toggle" aria-label="Enable Embolden on this site">
+      <span class="slider"></span>
+    </label>
+  </section>
+
+  <section class="row">
+    <span class="row-label" id="strength-label">Strength</span>
+    <div class="segmented" role="radiogroup" aria-labelledby="strength-label" id="strength-group">
+      <button type="button" role="radio" aria-checked="false" data-strength="low">Low</button>
+      <button type="button" role="radio" aria-checked="false" data-strength="medium">Medium</button>
+      <button type="button" role="radio" aria-checked="false" data-strength="high">High</button>
+    </div>
+  </section>
+
+  <section class="preview" id="preview" aria-hidden="true"></section>
+
+  <footer class="hint">Press <kbd>Alt</kbd>+<kbd>B</kbd> to toggle this site</footer>
+
+  <script src="../src/core.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
