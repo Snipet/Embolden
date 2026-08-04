@@ -50,16 +50,20 @@
     masterToggle.checked = settings.enabled;
     siteToggle.checked = siteEnabled();
     for (const button of strengthButtons) {
-      button.setAttribute(
-        "aria-checked",
-        button.dataset.strength === settings.strength ? "true" : "false"
-      );
+      const selected = button.dataset.strength === settings.strength;
+      button.setAttribute("aria-checked", selected ? "true" : "false");
+      // Roving tabindex: Tab reaches the group once, arrows move within.
+      button.tabIndex = selected ? 0 : -1;
     }
     renderPreview();
   }
 
   function save() {
-    chrome.storage.sync.set({ settings });
+    chrome.storage.sync.set({ settings }, () => {
+      if (chrome.runtime.lastError) {
+        console.warn("Embolden: saving settings failed:", chrome.runtime.lastError.message);
+      }
+    });
   }
 
   masterToggle.addEventListener("change", () => {
@@ -77,12 +81,43 @@
     render();
   });
 
+  function selectStrength(strength, focus) {
+    settings.strength = strength;
+    save();
+    render();
+    if (focus) {
+      const button = strengthButtons.find((b) => b.dataset.strength === strength);
+      if (button) button.focus();
+    }
+  }
+
   strengthGroup.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-strength]");
     if (!button) return;
-    settings.strength = button.dataset.strength;
-    save();
-    render();
+    selectStrength(button.dataset.strength, false);
+  });
+
+  // ARIA radio pattern: arrow keys move (and select) within the group.
+  strengthGroup.addEventListener("keydown", (event) => {
+    const delta =
+      event.key === "ArrowRight" || event.key === "ArrowDown" ? 1
+      : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1
+      : 0;
+    let index;
+    if (delta !== 0) {
+      const current = strengthButtons.findIndex(
+        (b) => b.dataset.strength === settings.strength
+      );
+      index = (current + delta + strengthButtons.length) % strengthButtons.length;
+    } else if (event.key === "Home") {
+      index = 0;
+    } else if (event.key === "End") {
+      index = strengthButtons.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    selectStrength(strengthButtons[index].dataset.strength, true);
   });
 
   function disableSiteRow(reason) {
@@ -99,6 +134,9 @@
     if (host && !WEBSTORE_HOSTS.has(host)) {
       currentHost = host;
       siteHost.textContent = host;
+      // Starts disabled in the markup so clicks before the tab is known
+      // can't desync the UI.
+      siteToggle.disabled = false;
     } else if (typeof url === "string" && url.startsWith("file:")) {
       disableSiteRow("Local files don't have a site to toggle; use the main switch.");
     } else {

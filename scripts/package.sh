@@ -14,14 +14,23 @@ fi
 VERSION=$(node -p "JSON.parse(require('fs').readFileSync('manifest.json','utf8')).version")
 OUT="dist/embolden-${VERSION}.zip"
 
+FILES=(
+  manifest.json
+  src/core.js src/content.js src/content.css src/background.js
+  popup/popup.html popup/popup.css popup/popup.js
+  icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png
+)
+
+# zip exits 0 even when some listed files don't exist — fail loudly instead
+# of shipping a broken package.
+for f in "${FILES[@]}"; do
+  [[ -f "$f" ]] || { echo "error: missing $f" >&2; exit 1; }
+done
+
 mkdir -p dist
 rm -f "$OUT"
 
-zip -r -X "$OUT" \
-  manifest.json \
-  src/core.js src/content.js src/content.css src/background.js \
-  popup/popup.html popup/popup.css popup/popup.js \
-  icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png
+zip -r -X "$OUT" "${FILES[@]}"
 
 echo
 echo "Packaged $OUT"

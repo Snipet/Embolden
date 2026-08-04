@@ -19,8 +19,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.commands.onCommand.addListener(async (command, tab) => {
-  if (command !== "toggle-site") return;
+async function toggleSite(tab) {
   let target = tab;
   if (!target || !target.url) {
     // activeTab is granted by the keyboard-shortcut invocation, so the
@@ -36,4 +35,14 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   if (index === -1) settings.disabledSites.push(host);
   else settings.disabledSites.splice(index, 1);
   await chrome.storage.sync.set({ settings });
+}
+
+// Serialize toggles through a promise chain: two quick Alt+B presses must
+// not both read the same disabledSites and write the same "toggled" copy
+// (which would leave the site stuck in one state).
+let pendingToggle = Promise.resolve();
+
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command !== "toggle-site") return;
+  pendingToggle = pendingToggle.then(() => toggleSite(tab)).catch(() => {});
 });

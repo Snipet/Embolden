@@ -1,7 +1,8 @@
 # Chrome Web Store listing draft
 
-(Draft copy for the store listing. Note: never use the phrase "Bionic
-Reading" anywhere — it's trademarked.)
+(Draft copy for the store listing. Note: a well-known commercial product
+trademarked the obvious two-word name for this reading technique — never
+use that name anywhere in code, UI, or listing copy.)
 
 ## Title
 

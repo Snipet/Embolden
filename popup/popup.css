@@ -1,9 +1,12 @@
 :root {
   --bg: #fffdf9;
   --text: #2c2318;
-  --muted: #8a7d6d;
+  --muted: #6b5f50;
   --border: #e8e0d4;
   --accent: #e8890c;
+  /* Accent for text must clear WCAG AA on --bg/--accent-soft; the brighter
+     --accent stays for large surfaces (switch track, focus rings). */
+  --accent-text: #9a5500;
   --accent-soft: #fdf1e0;
   --track: #d8cfc2;
 }
@@ -15,6 +18,7 @@
     --muted: #a2947f;
     --border: #3a332a;
     --accent: #f0a03a;
+    --accent-text: #f0a03a;
     --accent-soft: #33291b;
     --track: #4a4136;
   }
@@ -56,7 +60,7 @@ header.row {
 
 .wordmark-bold {
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .row-text {
@@ -162,7 +166,7 @@ header.row {
 
 .segmented button[aria-checked="true"] {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 

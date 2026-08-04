@@ -24,7 +24,7 @@
   const SKIP_TAGS = new Set([
     "SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "TEXTAREA", "INPUT", "SELECT",
     "OPTION", "CODE", "PRE", "KBD", "SAMP", "SVG", "MATH", "CANVAS", "VIDEO",
-    "AUDIO", "IFRAME", WRAPPER_TAG,
+    "AUDIO", "IFRAME", "HEAD", "TITLE", WRAPPER_TAG,
   ]);
   // Ligature icon fonts render words like "settings" as a single glyph;
   // splitting them into spans destroys the icon. Catches Font Awesome,
@@ -112,6 +112,10 @@
     if (!node.isConnected) return;
     const parent = node.parentNode;
     if (!parent) return;
+    // Re-vet at wrap time: between collection and this idle slice the node
+    // may have moved, or an ancestor may have become editable/skipped
+    // (attribute flips produce no observer records).
+    if (!node.parentElement || isInsideSkippedTree(node.parentElement)) return;
     const text = node.nodeValue;
     if (!text || !HAS_LETTER_RE.test(text)) return;
     const parts = core.processText(text, ratio);
@@ -152,8 +156,13 @@
   });
 
   function observe() {
-    if (document.body) {
-      observer.observe(document.body, {
+    // Observe documentElement, not body: Turbo/Turbolinks-style apps swap
+    // the whole <body> element on navigation, and an observer bound to the
+    // old body would be left watching a detached node forever. Head/title
+    // mutations that this now also delivers are pruned by the HEAD/TITLE
+    // skip tags when roots are vetted.
+    if (document.documentElement) {
+      observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
         characterData: true,
@@ -269,7 +278,14 @@
 
   function processQueue(gen, deadline) {
     queueScheduled = false;
-    if (gen !== generation) return;
+    if (gen !== generation) {
+      // A newer apply superseded this slice while it was pending. Any
+      // queued nodes were collected by that newer generation (every bump
+      // runs resetQueue first), so hand the callback slot over to it
+      // instead of stranding a full queue with nothing scheduled.
+      scheduleQueue();
+      return;
+    }
     const sliceStart = performance.now();
     const hasDeadline = deadline && typeof deadline.timeRemaining === "function";
     withObserverPaused(() => {
@@ -308,8 +324,11 @@
     resetQueue();
     pendingRoots.clear();
     active = true;
-    if (!document.body) return;
     observe();
+    // TreeWalker filters never vet the traversal root itself, so check
+    // body's own chain: covers data-embolden-skip on <body>/<html> and
+    // fully-editable documents (designMode editor iframes).
+    if (!document.body || isInsideSkippedTree(document.body)) return;
     collectTextNodes(document.body, queue);
     scheduleQueue();
   }

@@ -50,6 +50,11 @@ requires — nothing about the pages you visit is collected or transmitted.
   broken glyph text — use the per-site toggle as the escape hatch.
 - Frameworks that re-render aggressively may briefly flash unbolded text
   while Embolden reapplies; if a site misbehaves, disable Embolden there.
+- Apps that update a text node in place while keeping a reference to it
+  (some React/Vue patterns, e.g. a live counter) may show stale text for
+  that node, because splitting a text node for bolding detaches the
+  original. Full re-renders recover automatically; the per-site toggle is
+  the escape hatch for pages built entirely around such updates.
 
 ## Development
 

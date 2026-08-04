@@ -55,10 +55,17 @@ function getSegmenters(locale) {
   return entry;
 }
 
+// Own-property check, not a plain lookup: stored strength could be any
+// string, and inherited keys like "toString" must not pass validation.
+function isValidStrength(strength) {
+  return (
+    typeof strength === "string" &&
+    Object.prototype.hasOwnProperty.call(STRENGTH_RATIOS, strength)
+  );
+}
+
 function ratioForStrength(strength) {
-  return STRENGTH_RATIOS[strength] !== undefined
-    ? STRENGTH_RATIOS[strength]
-    : STRENGTH_RATIOS.medium;
+  return isValidStrength(strength) ? STRENGTH_RATIOS[strength] : STRENGTH_RATIOS.medium;
 }
 
 // Number of grapheme clusters to bold for a word of n clusters.
@@ -99,7 +106,8 @@ function pushPart(parts, key, text) {
 }
 
 // processText("reading helps", 0.45) →
-//   [{bold:"rea"},{plain:"ding "},{bold:"hel"},{plain:"ps"}]
+//   [{bold:"rea"},{plain:"ding "},{bold:"he"},{plain:"lps"}]
+//   ("helps" is 5 clusters; round(5 × 0.45) = 2 bold)
 // Concatenating all parts always reproduces the input exactly.
 // Adjacent same-type runs are merged so callers create fewer nodes.
 function processText(text, ratio, locale) {
@@ -129,8 +137,7 @@ function normalizeSettings(raw) {
   return {
     v: 1,
     enabled: typeof s.enabled === "boolean" ? s.enabled : DEFAULT_SETTINGS.enabled,
-    strength:
-      STRENGTH_RATIOS[s.strength] !== undefined ? s.strength : DEFAULT_SETTINGS.strength,
+    strength: isValidStrength(s.strength) ? s.strength : DEFAULT_SETTINGS.strength,
     disabledSites: Array.isArray(s.disabledSites)
       ? s.disabledSites.filter((h) => typeof h === "string" && h.length > 0)
       : [],

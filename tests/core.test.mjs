@@ -41,6 +41,16 @@ test("unknown strength falls back to medium", () => {
   assert.equal(ratioForStrength(null), 0.45);
 });
 
+test("inherited object keys are not valid strengths", () => {
+  // A corrupt/synced strength like "toString" must not resolve through the
+  // prototype chain into a non-number ratio (which would NaN every word).
+  for (const key of ["toString", "constructor", "valueOf", "hasOwnProperty"]) {
+    assert.equal(ratioForStrength(key), 0.45, key);
+    assert.equal(normalizeSettings({ strength: key }).strength, "medium", key);
+  }
+  assert.equal(normalizeSettings({ strength: "__proto__" }).strength, "medium");
+});
+
 test("boldLength at medium matches the spec examples", () => {
   // "a"→1, "the"→1, "word"→2, "reading"→3, "attention"→4
   assert.equal(boldLength(1, MEDIUM), 1);
