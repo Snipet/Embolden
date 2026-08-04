@@ -34,6 +34,7 @@
 
   const SLICE_BUDGET_MS = 8;
   const FALLBACK_CHUNK = 200;
+  const DEDUPE_ROOT_LIMIT = 50;
 
   let settings = core.normalizeSettings(null);
   let ratio = core.ratioForStrength(settings.strength);
@@ -49,6 +50,10 @@
   let queue = [];
   let queueIndex = 0;
   let queueScheduled = false;
+
+  // Roots touched by page mutations, awaiting a debounced re-process.
+  const pendingRoots = new Set();
+  let flushScheduled = false;
 
   function resetQueue() {
     queue = [];
@@ -69,6 +74,16 @@
     }
     const cls = typeof el.getAttribute === "function" ? el.getAttribute("class") : null;
     if (cls && ICON_CLASS_RE.test(cls)) return true;
+    return false;
+  }
+
+  // The walker filter only vets descendants of the root it starts from.
+  // Mutation roots can sit anywhere (e.g. inside a contenteditable
+  // composer), so their own chain up to <html> must be vetted too.
+  function isInsideSkippedTree(el) {
+    for (let e = el; e !== null; e = e.parentElement) {
+      if (e.nodeType === Node.ELEMENT_NODE && isSkippedElement(e)) return true;
+    }
     return false;
   }
 
@@ -123,7 +138,129 @@
     }
   }
 
+  // ---------------------------------------------------------------------
+  // MutationObserver: catches SPA re-renders, infinite scroll, and live
+  // text updates. Our own DOM writes always happen with the observer
+  // disconnected (within one synchronous block, so no page mutations can
+  // slip through the gap) — records only queue while connected, which is
+  // sturdier than any boolean "ignore my own mutations" flag.
+  // ---------------------------------------------------------------------
+  const observer = new MutationObserver((records) => {
+    if (!active) return;
+    collectFromRecords(records);
+    scheduleFlush();
+  });
+
+  function observe() {
+    if (document.body) {
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
+  }
+
+  function withObserverPaused(fn) {
+    // Queued-but-undelivered records would be lost on disconnect; drain
+    // them into pendingRoots first.
+    const pending = observer.takeRecords();
+    if (pending.length > 0) {
+      collectFromRecords(pending);
+      scheduleFlush();
+    }
+    observer.disconnect();
+    try {
+      fn();
+    } finally {
+      if (active) observe();
+    }
+  }
+
+  function isOurElement(node) {
+    let el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    for (; el !== null; el = el.parentElement) {
+      if (el.nodeName.toUpperCase() === WRAPPER_TAG) return true;
+    }
+    return false;
+  }
+
+  function addRoot(node) {
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (el) pendingRoots.add(el);
+  }
+
+  function collectFromRecords(records) {
+    for (const record of records) {
+      // Belt-and-braces: our writes shouldn't be observed at all (see
+      // withObserverPaused), but never react to anything inside a wrapper.
+      if (isOurElement(record.target)) continue;
+      if (record.type === "characterData") {
+        addRoot(record.target);
+      } else if (record.type === "childList") {
+        for (const node of record.addedNodes) {
+          if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.TEXT_NODE) {
+            continue;
+          }
+          if (isOurElement(node)) continue;
+          addRoot(node);
+        }
+        // A framework may strip our wrappers on re-render, leaving
+        // partial-word text fragments behind; reprocess the parent.
+        for (const node of record.removedNodes) {
+          if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            node.nodeName.toUpperCase() === WRAPPER_TAG
+          ) {
+            addRoot(record.target);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  function scheduleFlush() {
+    if (flushScheduled) return;
+    flushScheduled = true;
+    scheduleIdle(flushRoots);
+  }
+
+  function flushRoots() {
+    flushScheduled = false;
+    if (!active) {
+      pendingRoots.clear();
+      return;
+    }
+    const roots = Array.from(pendingRoots);
+    pendingRoots.clear();
+    const live = roots.filter((r) => r.isConnected && !isInsideSkippedTree(r));
+    // Drop roots nested inside other pending roots (redundant work, and a
+    // nested revert between an ancestor's revert and re-wrap is wasted).
+    // Purely an optimization, so skip the O(n²) pass on big batches.
+    const tops =
+      live.length <= DEDUPE_ROOT_LIMIT
+        ? live.filter((r) => !live.some((o) => o !== r && o.contains(r)))
+        : live;
+    if (tops.length === 0) return;
+    withObserverPaused(() => {
+      for (const root of tops) {
+        // Revert before re-walking: existing wrappers under this root hold
+        // partial words, and normalize() fuses the fragments back into
+        // whole text nodes so re-bolding starts from clean words.
+        revertUnder(root);
+        collectTextNodes(root, queue);
+      }
+    });
+    scheduleQueue();
+  }
+
+  // ---------------------------------------------------------------------
+  // Apply / revert
+  // ---------------------------------------------------------------------
   function scheduleQueue() {
+    if (queueSize() === 0) return;
     if (queueScheduled) return;
     queueScheduled = true;
     const gen = generation;
@@ -135,17 +272,19 @@
     if (gen !== generation) return;
     const sliceStart = performance.now();
     const hasDeadline = deadline && typeof deadline.timeRemaining === "function";
-    let count = 0;
-    while (queueSize() > 0) {
-      if (performance.now() - sliceStart > SLICE_BUDGET_MS) break;
-      if (hasDeadline) {
-        if (deadline.timeRemaining() <= 1 && !deadline.didTimeout) break;
-      } else if (count >= FALLBACK_CHUNK) {
-        break;
+    withObserverPaused(() => {
+      let count = 0;
+      while (queueSize() > 0) {
+        if (performance.now() - sliceStart > SLICE_BUDGET_MS) break;
+        if (hasDeadline) {
+          if (deadline.timeRemaining() <= 1 && !deadline.didTimeout) break;
+        } else if (count >= FALLBACK_CHUNK) {
+          break;
+        }
+        wrapTextNode(queue[queueIndex++]);
+        count++;
       }
-      wrapTextNode(queue[queueIndex++]);
-      count++;
-    }
+    });
     if (queueSize() > 0) scheduleQueue();
     else resetQueue();
   }
@@ -167,8 +306,10 @@
   function applyAll() {
     generation++;
     resetQueue();
+    pendingRoots.clear();
     active = true;
     if (!document.body) return;
+    observe();
     collectTextNodes(document.body, queue);
     scheduleQueue();
   }
@@ -177,10 +318,15 @@
     generation++;
     resetQueue();
     active = false;
+    observer.disconnect();
+    pendingRoots.clear();
     if (!document.body) return;
     revertUnder(document.body);
   }
 
+  // ---------------------------------------------------------------------
+  // Settings
+  // ---------------------------------------------------------------------
   function effectiveEnabled(s) {
     return s.enabled && !s.disabledSites.includes(location.hostname);
   }
