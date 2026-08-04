@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Embolden – Reading Focus",
+  "description": "Bolds the first letters of every word, giving your eyes fixation anchors that make reading easier — built with ADHD in mind.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "100",
+  "permissions": ["storage", "activeTab"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/core.js", "src/content.js"],
+      "css": ["src/content.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}
