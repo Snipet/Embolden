@@ -27,9 +27,17 @@ Embolden gives every hop a clear landing spot. For many readers — especially
 those with ADHD — that structure makes it far easier to keep momentum
 through long articles, documentation, and news.
 
+**Tuned to your eyes, not ours**
+There's no single right amount of bold. Slide Anchor from a one-letter hint
+to most of the word, set Ink anywhere from a light touch to full black, and
+turn Variation up if a uniform prefix starts to feel like wallpaper — every
+change previews live in the popup before it touches a page.
+
 **Features**
 • Works on the pages you already read — articles, docs, forums, web apps
-• Three strength levels with a live preview
+• Three dials with a live preview: Anchor (how much of each word is bolded),
+  Ink (how heavy the bold looks), and Variation (varies the anchor length
+  word by word so the rhythm never flattens out)
 • Per-site off switch (popup or Alt+B) that remembers your choice
 • Settings sync across your Chrome profile
 • Leaves code blocks, text fields, editors, and icons untouched
@@ -53,5 +61,5 @@ Accessibility
 ## Screenshots to prepare (1280×800)
 
 1. Wikipedia article, before/after split with Embolden on.
-2. The popup over a news article — strength control + live preview.
+2. The popup over a news article — the three dials + live preview.
 3. Per-site toggle in action ("On this site" off on a code-heavy site).

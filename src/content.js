@@ -37,7 +37,9 @@
   const DEDUPE_ROOT_LIMIT = 50;
 
   let settings = core.normalizeSettings(null);
-  let ratio = core.ratioForStrength(settings.strength);
+  // Only ratio + jitter: weight is applied through a CSS custom property, so
+  // it never invalidates the wrappers already in the page.
+  let renderOpts = core.renderOptions(settings);
   // True while wrappers are applied (or an apply pass is in flight).
   let active = false;
 
@@ -118,7 +120,7 @@
     if (!node.parentElement || isInsideSkippedTree(node.parentElement)) return;
     const text = node.nodeValue;
     if (!text || !HAS_LETTER_RE.test(text)) return;
-    const parts = core.processText(text, ratio);
+    const parts = core.processText(text, renderOpts);
     if (parts.length === 0) return;
     if (parts.length === 1 && parts[0].plain !== undefined) return;
     const frag = document.createDocumentFragment();
@@ -350,17 +352,28 @@
     return s.enabled && !s.disabledSites.includes(location.hostname);
   }
 
+  // The bold weight rides on a custom property that src/content.css reads,
+  // so dragging the boldness control restyles the page instantly instead of
+  // unwrapping and re-walking every text node.
+  function applyWeight(weight) {
+    const root = document.documentElement;
+    if (root && root.style) root.style.setProperty("--embolden-weight", String(weight));
+  }
+
   function applySettings(next) {
     const prev = settings;
     settings = next;
-    ratio = core.ratioForStrength(next.strength);
+    renderOpts = core.renderOptions(next);
+    applyWeight(next.weight);
     const shouldBeOn = effectiveEnabled(next);
+    // Coverage and jitter decide where words are split, so they are the only
+    // changes that force a rebuild of the wrappers.
+    const reshaped = prev.coverage !== next.coverage || prev.jitter !== next.jitter;
     if (shouldBeOn && !active) {
       applyAll();
     } else if (!shouldBeOn && active) {
       revertAll();
-    } else if (shouldBeOn && active && prev.strength !== next.strength) {
-      // Strength change: revert + reapply (simple and correct).
+    } else if (shouldBeOn && active && reshaped) {
       revertAll();
       applyAll();
     }

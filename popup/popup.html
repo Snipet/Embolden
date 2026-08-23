@@ -6,37 +6,92 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <header class="row">
-    <h1 class="wordmark"><span class="wordmark-bold">Emb</span>olden</h1>
-    <label class="switch" title="Turn Embolden on or off everywhere">
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="head">
+    <h1 class="wordmark"><span class="swipe"><b>Emb</b></span>olden</h1>
+    <label class="power" title="Turn Embolden on or off everywhere">
       <input type="checkbox" id="master-toggle" aria-label="Enable Embolden everywhere">
-      <span class="slider"></span>
+      <span class="power-track"><span class="power-knob"></span></span>
     </label>
   </header>
 
-  <section class="row" id="site-row">
-    <div class="row-text">
-      <span class="row-label">On this site</span>
-      <span class="row-detail" id="site-host"></span>
+  <section class="stage">
+    <p class="page" id="preview"></p>
+    <div class="stage-foot">
+      <p class="stage-note" id="stage-note" role="status"></p>
+      <span class="stage-tag">Preview</span>
     </div>
-    <label class="switch" id="site-switch">
+  </section>
+
+  <div class="controls">
+    <section class="control">
+      <div class="control-head">
+        <span class="control-name" id="coverage-name">Anchor</span>
+        <output class="pill" id="coverage-value" for="coverage">45%</output>
+      </div>
+      <input class="range" type="range" id="coverage" aria-labelledby="coverage-name">
+      <div class="scale"><span>shorter</span><span>longer</span></div>
+      <p class="hint">How much of each word gets bolded.</p>
+    </section>
+
+    <section class="control">
+      <div class="control-head">
+        <span class="control-name" id="weight-name">Ink</span>
+        <output class="pill" id="weight-value">Bold</output>
+      </div>
+      <div class="tiles" role="radiogroup" aria-labelledby="weight-name" id="weight-group">
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="500">
+          <span class="glyph">Ag</span><span class="tile-name">Light</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="600">
+          <span class="glyph">Ag</span><span class="tile-name">Semi</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="700">
+          <span class="glyph">Ag</span><span class="tile-name">Bold</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="800">
+          <span class="glyph">Ag</span><span class="tile-name">Extra</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="900">
+          <span class="glyph">Ag</span><span class="tile-name">Black</span>
+        </button>
+      </div>
+      <p class="hint">How heavy the bolded part looks.</p>
+    </section>
+
+    <section class="control">
+      <div class="control-head">
+        <span class="control-name" id="jitter-name">Variation</span>
+        <output class="pill" id="jitter-value" for="jitter">Off</output>
+      </div>
+      <input class="range" type="range" id="jitter" aria-labelledby="jitter-name">
+      <div class="scale stops" id="jitter-stops">
+        <span data-stop="0">Off</span>
+        <span data-stop="1">Subtle</span>
+        <span data-stop="2">Mixed</span>
+        <span data-stop="3">Wild</span>
+      </div>
+      <p class="hint">Varies the anchor length word by word, so the rhythm never flattens out.</p>
+    </section>
+  </div>
+
+  <section class="site" id="site-row">
+    <span class="monogram" id="site-monogram" aria-hidden="true"></span>
+    <div class="site-text">
+      <span class="site-label">On this site</span>
+      <span class="site-host" id="site-host">…</span>
+    </div>
+    <label class="power small" id="site-switch">
       <input type="checkbox" id="site-toggle" disabled aria-label="Enable Embolden on this site">
-      <span class="slider"></span>
+      <span class="power-track"><span class="power-knob"></span></span>
     </label>
   </section>
 
-  <section class="row">
-    <span class="row-label" id="strength-label">Strength</span>
-    <div class="segmented" role="radiogroup" aria-labelledby="strength-label" id="strength-group">
-      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-strength="low">Low</button>
-      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-strength="medium">Medium</button>
-      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-strength="high">High</button>
-    </div>
-  </section>
-
-  <section class="preview" id="preview" aria-hidden="true"></section>
-
-  <footer class="hint">Press <kbd>Alt</kbd>+<kbd>B</kbd> to toggle this site</footer>
+  <footer class="foot">
+    <span><kbd>Alt</kbd><kbd>B</kbd> toggles this site</span>
+    <button type="button" id="reset" title="Restore Anchor, Ink, and Variation to their defaults (your per-site choices are kept)">Reset</button>
+  </footer>
 
   <script src="../src/core.js"></script>
   <script src="popup.js"></script>

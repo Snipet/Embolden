@@ -1,1 +1,26 @@
-emb-b { font-weight: 700 !important; }
+/* The bolded prefix. Weight comes from a custom property that the content
+   script writes to <html>, so changing boldness is a repaint, not a re-walk.
+   The literal fallback keeps prefixes bold if the script hasn't set the
+   property yet (first paint) or if a page somehow clears inline styles. */
+emb-b {
+  font-weight: 700 !important;
+  font-weight: var(--embolden-weight, 700) !important;
+}
+
+/* Inside text that is already heavy — headings, <strong>, <b> — a prefix
+   lighter than its surroundings reads inverted: the anchor would look like
+   the least important part of the word. Never drop below the local weight.
+   max() lands after a plain declaration so engines without CSS math just
+   keep the fallback. */
+b emb-b,
+strong emb-b,
+th emb-b,
+h1 emb-b,
+h2 emb-b,
+h3 emb-b,
+h4 emb-b,
+h5 emb-b,
+h6 emb-b {
+  font-weight: 700 !important;
+  font-weight: max(var(--embolden-weight, 700), 700) !important;
+}

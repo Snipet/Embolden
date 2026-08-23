@@ -12,8 +12,13 @@ find long articles noticeably easier to get through this way.
 
 - **Works everywhere** — articles, docs, forums, and dynamic pages (infinite
   scroll and single-page apps are re-processed as content arrives).
-- **Three strengths** — Low, Medium, High control how much of each word is
-  bolded, with a live preview in the popup.
+- **Tune it to your eyes** — three dials, all with a live preview in the
+  popup:
+  - **Anchor** (10–90%) — how much of each word gets bolded.
+  - **Ink** (Light → Black) — how heavy the bolded part looks.
+  - **Variation** (Off → Wild) — nudges the anchor length up or down per
+    word, so a page of identical 45% prefixes doesn't settle into a pattern
+    your eye starts skimming.
 - **Per-site toggle** — turn Embolden off for any site from the popup or with
   **Alt+B**; the choice sticks and syncs via your Chrome profile.
 - **Careful about what it touches** — code blocks, text boxes, editors
@@ -26,9 +31,10 @@ find long articles noticeably easier to get through this way.
 
 **Embolden reads nothing and sends nothing.** No analytics, no network
 requests, no remote code. The only stored data is your own settings (on/off,
-strength, your disabled-sites list) in `chrome.storage.sync`. The broad site
-access warning at install time is just what any page-restyling extension
-requires — nothing about the pages you visit is collected or transmitted.
+anchor, ink, variation, and your disabled-sites list) in
+`chrome.storage.sync`. The broad site access warning at install time is just
+what any page-restyling extension requires — nothing about the pages you
+visit is collected or transmitted.
 
 ## Install (unpacked, for development)
 
@@ -38,7 +44,9 @@ requires — nothing about the pages you visit is collected or transmitted.
 
 ## Usage
 
-- Click the toolbar icon for the master switch, per-site switch, and strength.
+- Click the toolbar icon for the master switch, per-site switch, and the
+  three appearance dials. **Reset** in the footer restores the dials to
+  their defaults and leaves your per-site choices alone.
 - Press **Alt+B** to toggle Embolden on the current site.
 
 ## Known limitations
@@ -48,6 +56,15 @@ requires — nothing about the pages you visit is collected or transmitted.
 - **Chrome's PDF viewer** and `chrome://` pages don't allow extensions.
 - Some **ligature icon fonts** that dodge our icon heuristic may render as
   broken glyph text — use the per-site toggle as the escape hatch.
+- **Ink** can only use weights the page's font actually ships. A site with
+  nothing but Regular and Bold will render Light/Semi the same as Regular
+  and Extra/Black the same as Bold; variable fonts show all five. Inside
+  text that is already heavy (headings, `<strong>`) the anchor never drops
+  below the surrounding weight, so it can't read as the *lighter* part of
+  the word.
+- **Variation** is deterministic, not random: a word's anchor length is
+  derived from the word itself, so identical words match and nothing
+  reshuffles when a page re-renders.
 - Frameworks that re-render aggressively may briefly flash unbolded text
   while Embolden reapplies; if a site misbehaves, disable Embolden there.
 - Apps that update a text node in place while keeping a reference to it
@@ -81,11 +98,11 @@ node scripts/make-icons.mjs
 
 ```
 manifest.json        MV3 manifest
-src/core.js          pure functions: segmentation, bold lengths, skip rules
+src/core.js          pure functions: segmentation, bold lengths, settings
 src/content.js       DOM pipeline: walk, wrap, revert, MutationObserver
-src/content.css      the one bold rule for <emb-b> wrappers
+src/content.css      weight rules for <emb-b> wrappers
 src/background.js    service worker: install defaults, Alt+B command
-popup/               toolbar popup (toggles, strength, live preview)
+popup/               toolbar popup (toggles, the three dials, live preview)
 tests/               node:test suite for core.js
 scripts/             packaging + icon generation
 docs/                Chrome Web Store listing draft
