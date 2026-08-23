@@ -10,7 +10,6 @@
   const PREVIEW_TEXT =
     "An anchor at the start of every word gives your eyes a place to land, so long pages stop sliding past.";
 
-  const JITTER_LABELS = ["Off", "Subtle", "Mixed", "Wild"];
   const WEIGHT_LABELS = {
     500: "Light",
     600: "Semi",
@@ -23,8 +22,8 @@
   const WEBSTORE_HOSTS = new Set(["chromewebstore.google.com", "chrome.google.com"]);
 
   // Slider travel is (track − thumb) wide, so a naive percentage leaves the
-  // fill lagging the thumb at both ends. Keep the two numbers in sync.
-  const THUMB_PX = 18;
+  // fill lagging the thumb at both ends. Keep in sync with the CSS thumb.
+  const THUMB_PX = 5;
 
   const SAVE_DEBOUNCE_MS = 250;
 
@@ -37,11 +36,6 @@
   const siteMonogram = el("site-monogram");
   const coverage = el("coverage");
   const coverageValue = el("coverage-value");
-  const jitter = el("jitter");
-  const jitterValue = el("jitter-value");
-  const jitterStops = Array.from(el("jitter-stops").querySelectorAll("span"));
-  const weightGroup = el("weight-group");
-  const weightButtons = Array.from(weightGroup.querySelectorAll("button"));
   const weightValue = el("weight-value");
   const preview = el("preview");
   const stage = document.querySelector(".stage");
@@ -52,14 +46,9 @@
   // null until the active tab is known; stays null on unsupported pages.
   let currentHost = null;
 
-  function configureRange(input, range) {
-    input.min = String(range.min);
-    input.max = String(range.max);
-    input.step = String(range.step);
-  }
-
-  configureRange(coverage, LIMITS.coverage);
-  configureRange(jitter, LIMITS.jitter);
+  coverage.min = String(LIMITS.coverage.min);
+  coverage.max = String(LIMITS.coverage.max);
+  coverage.step = String(LIMITS.coverage.step);
 
   function siteEnabled() {
     return currentHost !== null && !settings.disabledSites.includes(currentHost);
@@ -77,6 +66,62 @@
     );
   }
 
+  // Ink and Variation are the same control: a strip of role=radio buttons
+  // whose value lives in a data attribute. ARIA radio pattern — roving
+  // tabindex, arrows move (and select) within the group.
+  function setupStrip(group, dataKey, settingKey) {
+    const buttons = Array.from(group.querySelectorAll("button"));
+    const valueOf = (b) => Number(b.dataset[dataKey]);
+
+    function select(value, focus) {
+      settings[settingKey] = value;
+      save();
+      render();
+      if (focus) {
+        const button = buttons.find((b) => valueOf(b) === value);
+        if (button) button.focus();
+      }
+    }
+
+    group.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (button) select(valueOf(button), false);
+    });
+
+    group.addEventListener("keydown", (event) => {
+      const delta =
+        event.key === "ArrowRight" || event.key === "ArrowDown" ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1
+        : 0;
+      let index;
+      if (delta !== 0) {
+        const current = buttons.findIndex((b) => valueOf(b) === settings[settingKey]);
+        index = (current + delta + buttons.length) % buttons.length;
+      } else if (event.key === "Home") {
+        index = 0;
+      } else if (event.key === "End") {
+        index = buttons.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      select(valueOf(buttons[index]), true);
+    });
+
+    return {
+      sync() {
+        for (const button of buttons) {
+          const selected = valueOf(button) === settings[settingKey];
+          button.setAttribute("aria-checked", selected ? "true" : "false");
+          button.tabIndex = selected ? 0 : -1;
+        }
+      },
+    };
+  }
+
+  const weightStrip = setupStrip(el("weight-group"), "weight", "weight");
+  const jitterStrip = setupStrip(el("jitter-group"), "jitter", "jitter");
+
   function renderPreview() {
     const parts = core.processText(PREVIEW_TEXT, core.renderOptions(settings), "en");
     preview.textContent = "";
@@ -92,8 +137,7 @@
     // The preview inherits the same custom property the content script writes
     // to page documents, so one code path drives both.
     document.documentElement.style.setProperty("--embolden-weight", String(settings.weight));
-    const on = effectivelyOn();
-    stage.classList.toggle("off", !on);
+    stage.classList.toggle("off", !effectivelyOn());
     stageNote.textContent = !settings.enabled
       ? "Paused everywhere"
       : currentHost !== null && !siteEnabled()
@@ -110,22 +154,9 @@
     coverageValue.textContent = `${settings.coverage}%`;
     paintTrack(coverage, LIMITS.coverage);
 
-    jitter.value = String(settings.jitter);
-    const jitterLabel = JITTER_LABELS[settings.jitter] || JITTER_LABELS[0];
-    jitter.setAttribute("aria-valuetext", jitterLabel);
-    jitterValue.textContent = jitterLabel;
-    paintTrack(jitter, LIMITS.jitter);
-    for (const stop of jitterStops) {
-      stop.dataset.active = Number(stop.dataset.stop) === settings.jitter ? "true" : "false";
-    }
-
     weightValue.textContent = WEIGHT_LABELS[settings.weight] || String(settings.weight);
-    for (const button of weightButtons) {
-      const selected = Number(button.dataset.weight) === settings.weight;
-      button.setAttribute("aria-checked", selected ? "true" : "false");
-      // Roving tabindex: Tab reaches the group once, arrows move within.
-      button.tabIndex = selected ? 0 : -1;
-    }
+    weightStrip.sync();
+    jitterStrip.sync();
 
     renderPreview();
   }
@@ -187,61 +218,17 @@
     render();
   });
 
-  // Slider values come back through normalizeSettings so a wheel/keyboard
-  // nudge can't land off the step grid.
-  function bindRange(input, key, commit) {
-    input.addEventListener("input", () => {
-      settings[key] = core.quantize(Number(input.value), LIMITS[key]) ?? settings[key];
-      render();
-      commit();
-    });
-    input.addEventListener("change", () => {
-      settings[key] = core.quantize(Number(input.value), LIMITS[key]) ?? settings[key];
-      render();
-      save();
-    });
-  }
-
-  bindRange(coverage, "coverage", saveSoon);
-  bindRange(jitter, "jitter", saveSoon);
-
-  function selectWeight(weight, focus) {
-    settings.weight = weight;
-    save();
+  // Slider values come back through quantize so a wheel/keyboard nudge can't
+  // land off the step grid.
+  coverage.addEventListener("input", () => {
+    settings.coverage = core.quantize(Number(coverage.value), LIMITS.coverage) ?? settings.coverage;
     render();
-    if (focus) {
-      const button = weightButtons.find((b) => Number(b.dataset.weight) === weight);
-      if (button) button.focus();
-    }
-  }
-
-  weightGroup.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-weight]");
-    if (!button) return;
-    selectWeight(Number(button.dataset.weight), false);
+    saveSoon();
   });
-
-  // ARIA radio pattern: arrow keys move (and select) within the group.
-  weightGroup.addEventListener("keydown", (event) => {
-    const delta =
-      event.key === "ArrowRight" || event.key === "ArrowDown" ? 1
-      : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1
-      : 0;
-    let index;
-    if (delta !== 0) {
-      const current = weightButtons.findIndex(
-        (b) => Number(b.dataset.weight) === settings.weight
-      );
-      index = (current + delta + weightButtons.length) % weightButtons.length;
-    } else if (event.key === "Home") {
-      index = 0;
-    } else if (event.key === "End") {
-      index = weightButtons.length - 1;
-    } else {
-      return;
-    }
-    event.preventDefault();
-    selectWeight(Number(weightButtons[index].dataset.weight), true);
+  coverage.addEventListener("change", () => {
+    settings.coverage = core.quantize(Number(coverage.value), LIMITS.coverage) ?? settings.coverage;
+    render();
+    save();
   });
 
   // Reset restores the three appearance dials only: wiping disabledSites

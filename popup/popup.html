@@ -9,7 +9,7 @@
   <div class="grain" aria-hidden="true"></div>
 
   <header class="head">
-    <h1 class="wordmark"><span class="swipe"><b>Emb</b></span>olden</h1>
+    <h1 class="wordmark"><span class="mark">Emb<svg class="stroke" viewBox="0 0 60 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 3.9 C 16 1.9, 40 1.7, 59 2.9 L 59 4.3 C 40 4.1, 15 5.1, 1 6.9 Z"/></svg></span>olden</h1>
     <label class="power" title="Turn Embolden on or off everywhere">
       <input type="checkbox" id="master-toggle" aria-label="Enable Embolden everywhere">
       <span class="power-track"><span class="power-knob"></span></span>
@@ -20,7 +20,7 @@
     <p class="page" id="preview"></p>
     <div class="stage-foot">
       <p class="stage-note" id="stage-note" role="status"></p>
-      <span class="stage-tag">Preview</span>
+      <span class="stage-tag">live preview</span>
     </div>
   </section>
 
@@ -28,34 +28,23 @@
     <section class="control">
       <div class="control-head">
         <span class="control-name" id="coverage-name">Anchor</span>
-        <output class="pill" id="coverage-value" for="coverage">45%</output>
+        <output class="value" id="coverage-value" for="coverage">45%</output>
       </div>
       <input class="range" type="range" id="coverage" aria-labelledby="coverage-name">
-      <div class="scale"><span>shorter</span><span>longer</span></div>
       <p class="hint">How much of each word gets bolded.</p>
     </section>
 
     <section class="control">
       <div class="control-head">
         <span class="control-name" id="weight-name">Ink</span>
-        <output class="pill" id="weight-value">Bold</output>
+        <output class="value" id="weight-value">Bold</output>
       </div>
-      <div class="tiles" role="radiogroup" aria-labelledby="weight-name" id="weight-group">
-        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="500">
-          <span class="glyph">Ag</span><span class="tile-name">Light</span>
-        </button>
-        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="600">
-          <span class="glyph">Ag</span><span class="tile-name">Semi</span>
-        </button>
-        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="700">
-          <span class="glyph">Ag</span><span class="tile-name">Bold</span>
-        </button>
-        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="800">
-          <span class="glyph">Ag</span><span class="tile-name">Extra</span>
-        </button>
-        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="900">
-          <span class="glyph">Ag</span><span class="tile-name">Black</span>
-        </button>
+      <div class="strip specimen" role="radiogroup" aria-labelledby="weight-name" id="weight-group">
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="500" aria-label="Light (500)">Ag</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="600" aria-label="Semibold (600)">Ag</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="700" aria-label="Bold (700)">Ag</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="800" aria-label="Extra bold (800)">Ag</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-weight="900" aria-label="Black (900)">Ag</button>
       </div>
       <p class="hint">How heavy the bolded part looks.</p>
     </section>
@@ -63,14 +52,12 @@
     <section class="control">
       <div class="control-head">
         <span class="control-name" id="jitter-name">Variation</span>
-        <output class="pill" id="jitter-value" for="jitter">Off</output>
       </div>
-      <input class="range" type="range" id="jitter" aria-labelledby="jitter-name">
-      <div class="scale stops" id="jitter-stops">
-        <span data-stop="0">Off</span>
-        <span data-stop="1">Subtle</span>
-        <span data-stop="2">Mixed</span>
-        <span data-stop="3">Wild</span>
+      <div class="strip words" role="radiogroup" aria-labelledby="jitter-name" id="jitter-group">
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-jitter="0">Off</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-jitter="1">Subtle</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-jitter="2">Mixed</button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-jitter="3">Wild</button>
       </div>
       <p class="hint">Varies the anchor length word by word, so the rhythm never flattens out.</p>
     </section>

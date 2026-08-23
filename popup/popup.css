@@ -1,41 +1,41 @@
-/* Embolden popup — "paper & ink".
-   Everything is drawn from two families of tokens: paper (surfaces) and ink
-   (text), with a single amber accent standing in for a highlighter pen. */
+/* Embolden popup — a small piece of print.
+   Two type voices carry the design: a serif for anything that is *reading
+   matter* (the masthead, the preview, the margin notes) and the system sans
+   for the machinery (controls, values). Solid ink rules — a thick-and-thin
+   masthead pair framing the preview — replace card chrome, and the amber
+   accent appears as marks a pen would leave: an underline stroke, a caret,
+   a selection tick. No pills, no boxes-in-boxes. */
 
 :root {
   --paper: #faf5ea;
   --paper-2: #fffdf7;
-  --paper-sunk: #f4ecdd;
   --ink: #241b12;
   --ink-soft: #6f6151;
   --ink-faint: #9a8b77;
   --edge: #e6dbc7;
-  --rule: rgba(36, 27, 18, 0.07);
+  --rule: rgba(36, 27, 18, 0.08);
   --amber: #e08a16;
   /* Amber for text/small marks; the brighter --amber is for fills only. */
   --amber-deep: #9c5a00;
-  --amber-wash: #fae7c8;
-  --swipe: rgba(224, 138, 22, 0.3);
   --track: #e3d9c7;
   --shadow: rgba(72, 51, 22, 0.16);
   --grain: 0.5;
+  --serif: Charter, "Iowan Old Style", Georgia, Cambria, "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --embolden-weight: 700;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --paper: #17130e;
-    --paper-2: #201a13;
-    --paper-sunk: #120f0b;
+    --paper-2: #221c14;
     --ink: #f3ead9;
     --ink-soft: #a5957e;
     --ink-faint: #7d6f5c;
     --edge: #362d22;
-    --rule: rgba(243, 234, 217, 0.06);
+    --rule: rgba(243, 234, 217, 0.07);
     --amber: #eda335;
     --amber-deep: #f2b95f;
-    --amber-wash: #2d2318;
-    --swipe: rgba(237, 163, 53, 0.32);
     --track: #3a3126;
     --shadow: rgba(0, 0, 0, 0.55);
     --grain: 0.28;
@@ -50,12 +50,10 @@
 
 body {
   width: 340px;
-  background:
-    radial-gradient(120% 80% at 50% -20%, var(--paper-2), transparent 60%),
-    var(--paper);
+  background: var(--paper);
   color: var(--ink);
-  font: 13.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  padding: 14px 16px 12px;
+  font: 13.5px/1.45 var(--sans);
+  padding: 14px 18px 12px;
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -76,62 +74,55 @@ body {
   .grain { mix-blend-mode: screen; }
 }
 
-/* ---------------------------------------------------------------- header */
+/* ------------------------------------------------------------- masthead */
 .head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
+  /* Thick rule of the thick-and-thin masthead pair; .stage's border-top
+     supplies the thin one. */
+  border-bottom: 2.5px solid var(--ink);
 }
 
 .wordmark {
-  position: relative;
-  z-index: 0;
-  font-size: 21px;
+  font-family: var(--serif);
+  font-size: 22px;
   font-weight: 400;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.005em;
 }
 
-.wordmark b {
-  font-weight: 800;
-  color: var(--ink);
-}
-
-/* Highlighter swipe: an uneven, slightly rotated wash behind "Emb" — the
-   product's whole idea, drawn instead of described. */
-.swipe {
+.mark {
   position: relative;
   display: inline-block;
+  font-weight: 700;
 }
 
-.swipe::before {
-  content: "";
+/* The pen stroke under "Emb": a filled SVG path, thicker at its start and
+   tapering off — an underline, so it can never sit on top of the letters. */
+.stroke {
   position: absolute;
-  inset: 14% -5px 8% -4px;
-  z-index: -1;
-  background: linear-gradient(
-    100deg,
-    transparent 0,
-    var(--swipe) 9%,
-    var(--swipe) 90%,
-    transparent 100%
-  );
-  border-radius: 46% 54% 52% 48% / 62% 38% 60% 40%;
-  transform: rotate(-1.4deg);
+  left: -2px;
+  right: -3px;
+  bottom: -3px;
+  width: calc(100% + 5px);
+  height: 7px;
+  fill: var(--amber);
+  opacity: 0.9;
 }
 
 /* ------------------------------------------------------------- switches */
 .power {
   position: relative;
   flex: none;
-  width: 44px;
-  height: 24px;
+  width: 42px;
+  height: 22px;
 }
 
 .power.small {
   width: 38px;
-  height: 21px;
+  height: 20px;
 }
 
 .power input {
@@ -147,7 +138,7 @@ body {
 .power-track {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: 5px;
   background: var(--track);
   box-shadow: inset 0 1px 2px var(--shadow);
   transition: background 0.18s ease;
@@ -158,9 +149,9 @@ body {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  width: 17px;
+  height: 16px;
+  border-radius: 3px;
   background: var(--paper-2);
   box-shadow: 0 1px 3px var(--shadow);
   transition: transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -168,15 +159,15 @@ body {
 
 .power.small .power-knob {
   width: 15px;
-  height: 15px;
+  height: 14px;
 }
 
 .power input:checked + .power-track {
-  background: linear-gradient(180deg, var(--amber), #c9770d);
+  background: var(--amber);
 }
 
 .power input:checked + .power-track .power-knob {
-  transform: translateX(20px);
+  transform: translateX(19px);
 }
 
 .power.small input:checked + .power-track .power-knob {
@@ -191,56 +182,24 @@ body {
 .power input:disabled { cursor: not-allowed; }
 .power input:disabled + .power-track { opacity: 0.45; }
 
-/* --------------------------------------------------------------- stage */
+/* ------------------------------------------------- the proof (preview) */
 .stage {
-  position: relative;
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--paper-2);
-  box-shadow: 0 8px 18px -14px var(--shadow);
-  padding: 13px 14px 12px 17px;
-  overflow: hidden;
-}
-
-/* Amber spine down the left edge, like a marked-up page. */
-.stage::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--amber), var(--amber-deep));
-  opacity: 0.85;
-}
-
-.stage-foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.stage-tag {
-  margin-left: auto;
-  flex: none;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+  margin-top: 3px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 12px 2px 8px;
 }
 
 /* Faint ruled lines, pitched to the preview's line-height. */
 .page {
-  font-size: 13.5px;
-  line-height: 21px;
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 22px;
   user-select: text;
   background-image: repeating-linear-gradient(
     to bottom,
-    transparent 0 20px,
-    var(--rule) 20px 21px
+    transparent 0 21px,
+    var(--rule) 21px 22px
   );
   transition: opacity 0.2s ease;
 }
@@ -253,11 +212,18 @@ body {
 .stage.off .page { opacity: 0.4; }
 .stage.off .page emb-b { font-weight: inherit; }
 
+.stage-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
 .stage-note {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12px;
   color: var(--amber-deep);
   min-width: 0;
   overflow: hidden;
@@ -265,14 +231,18 @@ body {
   white-space: nowrap;
 }
 
-
-/* ------------------------------------------------------------ controls */
-.controls {
-  padding: 4px 0 2px;
+.stage-tag {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--ink-faint);
 }
 
+/* ------------------------------------------------------------- controls */
 .control {
-  padding: 13px 0 11px;
+  padding: 12px 0 10px;
   border-bottom: 1px solid var(--edge);
 }
 
@@ -281,37 +251,32 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 9px;
+  margin-bottom: 7px;
 }
 
 .control-name {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 
-.pill {
-  font-size: 11.5px;
+.value {
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--amber-deep);
-  background: var(--amber-wash);
-  border-radius: 999px;
-  padding: 2px 9px;
-  min-width: 44px;
-  text-align: center;
 }
 
 .hint {
-  margin-top: 8px;
-  font-size: 11px;
+  margin-top: 7px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--ink-faint);
 }
 
-/* ------------------------------------------------------------- sliders */
+/* -------------------------------------------------------------- slider */
 .range {
   -webkit-appearance: none;
   appearance: none;
@@ -324,153 +289,129 @@ body {
 
 /* --fill is written by popup.js as a percentage of the track. */
 .range::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 999px;
+  height: 3px;
+  border-radius: 0;
   background:
-    linear-gradient(90deg, var(--amber-deep), var(--amber)) 0 / var(--fill, 50%) 100% no-repeat,
+    linear-gradient(var(--amber), var(--amber)) 0 / var(--fill, 50%) 100% no-repeat,
     var(--track);
-  box-shadow: inset 0 1px 2px var(--shadow);
 }
 
+/* The thumb is a caret — an insertion point in the line of the track. */
 .range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -6px;
-  border-radius: 50%;
-  background: var(--paper-2);
-  border: 2px solid var(--amber);
-  box-shadow: 0 1px 4px var(--shadow);
+  width: 5px;
+  height: 17px;
+  margin-top: -7px;
+  border-radius: 2.5px;
+  background: var(--amber);
+  border: none;
+  box-shadow: 0 1px 3px var(--shadow);
   transition: transform 0.12s ease;
 }
 
-.range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.range:active::-webkit-slider-thumb { transform: scaleY(1.15); }
 
 .range:focus-visible::-webkit-slider-thumb {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
 }
 
-.scale {
+/* ----------------------------------------------------- specimen strips */
+/* Ink and Variation are both a row of choices on a shared baseline; the
+   selected one carries a short amber tick underneath — the same mark the
+   wordmark wears, at pen-stroke width. */
+.strip {
   display: flex;
   justify-content: space-between;
-  margin-top: 2px;
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  align-items: baseline;
+}
+
+.strip button {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: inherit;
   color: var(--ink-faint);
-}
-
-/* Stop labels double as the tick marks for Variation. */
-.stops span {
+  cursor: pointer;
   position: relative;
-  padding-top: 6px;
-  transition: color 0.15s ease;
+  padding: 2px 6px 7px;
+  border-radius: 4px;
+  transition: color 0.14s ease;
 }
 
-.stops span::before {
+.strip button::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1px;
+  left: 5px;
+  right: 5px;
+  bottom: 2px;
   height: 3px;
-  background: var(--track);
+  border-radius: 2px;
+  background: var(--amber);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.stops span[data-active="true"] {
-  color: var(--amber-deep);
-  font-weight: 700;
+.strip button:hover { color: var(--ink-soft); }
+
+.strip button[aria-checked="true"] {
+  color: var(--ink);
 }
 
-.stops span[data-active="true"]::before { background: var(--amber); }
-
-/* First and last stops sit under the ends of the track, so pull their
-   ticks in line with the thumb's travel rather than the label's centre. */
-.stops span:first-child::before { left: 4px; }
-.stops span:last-child::before { left: auto; right: 4px; }
-
-/* -------------------------------------------------------- weight tiles */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
+.strip button[aria-checked="true"]::after {
+  opacity: 0.9;
+  transform: scaleX(1);
 }
 
-.tiles button {
-  appearance: none;
-  border: 1px solid var(--edge);
-  border-radius: 9px;
-  background: var(--paper-sunk);
-  color: var(--ink-soft);
-  font: inherit;
-  padding: 5px 0 4px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+.strip button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
 }
 
-.tiles button:hover { border-color: var(--amber); }
-
-.glyph {
-  font-size: 16px;
-  line-height: 1.15;
+/* Ink: each "Ag" is set at the weight it selects — the control is its own
+   specimen sheet. */
+.specimen button {
+  font-size: 17px;
+  line-height: 1.1;
   letter-spacing: -0.01em;
 }
 
-/* Each tile renders its own weight, so the control is its own legend. */
-.tiles button[data-weight="500"] .glyph { font-weight: 500; }
-.tiles button[data-weight="600"] .glyph { font-weight: 600; }
-.tiles button[data-weight="700"] .glyph { font-weight: 700; }
-.tiles button[data-weight="800"] .glyph { font-weight: 800; }
-.tiles button[data-weight="900"] .glyph { font-weight: 900; }
+.specimen button[data-weight="500"] { font-weight: 500; }
+.specimen button[data-weight="600"] { font-weight: 600; }
+.specimen button[data-weight="700"] { font-weight: 700; }
+.specimen button[data-weight="800"] { font-weight: 800; }
+.specimen button[data-weight="900"] { font-weight: 900; }
 
-.tile-name {
-  font-size: 8.5px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+/* Variation: plain words. */
+.words button {
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.tiles button[aria-checked="true"] {
-  background: var(--amber-wash);
-  border-color: var(--amber);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--amber);
-}
-
-.tiles button[aria-checked="true"] .tile-name { color: var(--amber-deep); }
-
-.tiles button:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-}
-
-/* ------------------------------------------------------------ site row */
+/* ------------------------------------------------------------- site row */
 .site {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 0 11px;
+  padding: 11px 0 10px;
   border-bottom: 1px solid var(--edge);
 }
 
+/* A drop cap in a small frame, like a printer's sort. */
 .monogram {
   flex: none;
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 2px;
   display: grid;
   place-items: center;
-  background: var(--amber-wash);
-  color: var(--amber-deep);
-  border: 1px solid var(--edge);
-  font-size: 12px;
-  font-weight: 800;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -482,15 +423,12 @@ body {
 }
 
 .site-label {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
 }
 
 .site-host {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--ink-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -502,7 +440,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 10px;
+  padding-top: 9px;
   font-size: 11px;
   color: var(--ink-faint);
 }
@@ -511,7 +449,7 @@ kbd {
   font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   border: 1px solid var(--edge);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: 3px;
   padding: 2px 4px;
   margin-right: 2px;
   background: var(--paper-2);
@@ -525,12 +463,9 @@ kbd {
   font: inherit;
   font-size: 11px;
   color: var(--ink-faint);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: var(--track);
   cursor: pointer;
   padding: 2px 3px;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 #reset:hover { color: var(--amber-deep); }
